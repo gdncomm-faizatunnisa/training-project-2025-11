@@ -2,6 +2,7 @@ package com.ecommerce.user.service;
 
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.model.RegisterUserRequest;
+import com.ecommerce.user.model.UserResponse;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.security.BCrypt;
 import jakarta.transaction.Transactional;
@@ -30,7 +31,7 @@ public class UserService {
     public void register(RegisterUserRequest request) {
         validationService.validate(request);
 
-        if(userRepository.existsById(request.getUsername())) {
+        if (userRepository.existsById(request.getUsername())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already exists");
         }
         User user = new User();
@@ -39,5 +40,12 @@ public class UserService {
         user.setName(request.getName());
 
         userRepository.save(user);
+    }
+
+    public UserResponse get(User user) {
+        return UserResponse.builder()
+                .username(user.getUsername())
+                .name(user.getName())
+                .build();
     }
 }
