@@ -1,6 +1,5 @@
-package com.ecommerce.product.entity;
+package com.ecommerce.product.dto;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -11,36 +10,29 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "products")
+/**
+ * DTO for creating a new product.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CreateProductRequest {
 
-    @NotBlank
-    @Column(unique = true, nullable = false)
+    @NotBlank(message = "SKU is required")
     private String sku;
 
-    @NotBlank
-    @Column(nullable = false)
+    @NotBlank(message = "Name is required")
     private String name;
 
-    @Size(max = 1000)
-    @Column(length = 1000)
+    @Size(max = 1000, message = "Description must not exceed 1000 characters")
     private String description;
 
-    @NotNull
-    @DecimalMin("0.0")
-    @Column(nullable = false)
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.0", message = "Price must be greater than or equal to 0")
     private Double price;
 
-    @NotNull
-    @Min(0)
-    @Column(nullable = false)
+    @NotNull(message = "Stock is required")
+    @Min(value = 0, message = "Stock must be greater than or equal to 0")
     private Integer stock;
 }
