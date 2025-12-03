@@ -2,6 +2,7 @@ package com.ecommerce.user.service;
 
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.model.RegisterUserRequest;
+import com.ecommerce.user.model.UpdateUserRequest;
 import com.ecommerce.user.model.UserResponse;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.security.BCrypt;
@@ -46,6 +47,26 @@ public class UserService {
         return UserResponse.builder()
                 .username(user.getUsername())
                 .name(user.getName())
+                .build();
+    }
+
+    @Transactional
+    public UserResponse update(User user, UpdateUserRequest request) {
+        validationService.validate(request);
+
+        if (java.util.Objects.nonNull(request.getName())) {
+            user.setName(request.getName());
+        }
+
+        if (java.util.Objects.nonNull(request.getPassword())) {
+            user.setPassword(BCrypt.hash(request.getPassword()));
+        }
+
+        userRepository.save(user);
+
+        return UserResponse.builder()
+                .name(user.getName())
+                .username(user.getUsername())
                 .build();
     }
 }

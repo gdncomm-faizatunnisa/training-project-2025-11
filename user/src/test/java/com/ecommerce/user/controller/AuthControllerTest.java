@@ -69,6 +69,55 @@ class AuthControllerTest {
         }
 
         @Test
+        void logoutSuccess() throws Exception {
+                com.ecommerce.user.entity.User user = new com.ecommerce.user.entity.User();
+                user.setName("Test");
+                user.setUsername("test");
+                user.setPassword(org.springframework.security.crypto.bcrypt.BCrypt.hashpw("test",
+                                org.springframework.security.crypto.bcrypt.BCrypt.gensalt()));
+                user.setToken("test");
+                user.setTokenExpiredAt(System.currentTimeMillis() + 10000000000L);
+                userRepository.save(user);
+
+                mockMvc.perform(
+                                delete("/api/auth/logout")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .header("X-API-TOKEN", "test"))
+                                .andExpectAll(
+                                                status().isOk())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
+                                                        });
+                                        assertNull(response.getErrors());
+                                        assertEquals("success", response.getData());
+
+                                        com.ecommerce.user.entity.User userDb = userRepository.findById("test")
+                                                        .orElse(null);
+                                        assertNotNull(userDb);
+                                        assertNull(userDb.getToken());
+                                        assertNull(userDb.getTokenExpiredAt());
+                                });
+        }
+
+        @Test
+        void logoutFailed() throws Exception {
+                mockMvc.perform(
+                                delete("/api/auth/logout")
+                                                .accept(MediaType.APPLICATION_JSON))
+                                .andExpectAll(
+                                                status().isUnauthorized())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
+                                                        });
+                                        assertNotNull(response.getErrors());
+                                });
+        }
+
+        @Test
         void loginFailedWrongPassword() throws Exception {
                 com.ecommerce.user.entity.User user = new com.ecommerce.user.entity.User();
                 user.setName("Test");
