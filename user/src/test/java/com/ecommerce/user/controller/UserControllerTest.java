@@ -2,6 +2,7 @@ package com.ecommerce.user.controller;
 
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.model.RegisterUserRequest;
+import com.ecommerce.user.model.UpdateUserRequest;
 import com.ecommerce.user.model.WebResponse;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.security.BCrypt;
@@ -27,106 +28,169 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
-
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        userRepository.deleteAll();
-        System.out.println("Users in DB after deleteAll: " + userRepository.count());
-    }
+        @BeforeEach
+        void setUp() {
+                userRepository.deleteAll();
+                System.out.println("Users in DB after deleteAll: " + userRepository.count());
+        }
 
-    @Test
-    void testRegisterSuccess() throws Exception {
-        RegisterUserRequest request = new RegisterUserRequest();
-        request.setUsername("Prabowo");
-        request.setPassword("secret");
-        request.setName("Test");
+        @Test
+        void testRegisterSuccess() throws Exception {
+                RegisterUserRequest request = new RegisterUserRequest();
+                request.setUsername("Prabowo");
+                request.setPassword("secret");
+                request.setName("Test");
 
-        mockMvc.perform(
-                post("/api/users")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-        ).andExpectAll(
-                status().isOk()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>(){});
-            assertEquals("success", response.getData());
-            System.out.println("Users in DB : " + userRepository.count());
-        });
+                mockMvc.perform(
+                                post("/api/users")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpectAll(
+                                                status().isOk())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
+                                                        });
+                                        assertEquals("success", response.getData());
+                                        System.out.println("Users in DB : " + userRepository.count());
+                                });
 
+        }
 
-    }
+        @Test
+        void testRegisterBadRequest() throws Exception {
+                RegisterUserRequest request = new RegisterUserRequest();
+                request.setUsername("");
+                request.setPassword("");
+                request.setName("");
 
+                mockMvc.perform(
+                                post("/api/users")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpectAll(
+                                                status().isBadRequest())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
 
+                                                        });
+                                        assertNotNull(response.getErrors());
+                                });
 
-    @Test
-    void testRegisterBadRequest() throws Exception {
-        RegisterUserRequest request = new RegisterUserRequest();
-        request.setUsername("");
-        request.setPassword("");
-        request.setName("");
+        }
 
-        mockMvc.perform(
-                post("/api/users")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-        ).andExpectAll(
-                status().isBadRequest()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>(){
+        @Test
+        void getUserUnauthorized() throws Exception {
+                mockMvc.perform(
+                                get("/api/users/current")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .header("X-API-TOKEN", "notfound"))
+                                .andExpectAll(
+                                                status().isUnauthorized())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
+                                                        });
+                                        assertNotNull(response.getErrors());
+                                });
+        }
 
-            });
-            assertNotNull(response.getErrors());
-        });
+        @Test
+        void getUserUnauthorizedTokenNotSend() throws Exception {
+                mockMvc.perform(
+                                get("/api/users/current")
+                                                .accept(MediaType.APPLICATION_JSON))
+                                .andExpectAll(
+                                                status().isUnauthorized())
+                                .andDo(result -> {
+                                        WebResponse<String> response = objectMapper.readValue(
+                                                        result.getResponse().getContentAsString(),
+                                                        new TypeReference<>() {
+                                                        });
+                                        assertNotNull(response.getErrors());
+                                });
+        }
 
+        @Test
+        void getUserSuccess() throws Exception {
+                User user = new User();
+                user.setUsername("test");
+                user.setPassword(BCrypt.hash("test"));
+                user.setName("Test");
+                user.setToken("test");
+                user.setTokenExpiredAt(System.currentTimeMillis() + 10000000000L);
+                userRepository.save(user);
 
-    }
-//    @Test
-//    void testRegisterDuplicate() throws Exception {
-//        User user = new User();
-//        user.setUsername("Prabowo");
-//        user.setPassword(BCrypt.hash("secret"));
-//        user.setName("Test");
-//        userRepository.save(user);
-//
-//
-//        RegisterUserRequest request = new RegisterUserRequest();
-//        request.setUsername("Prabowo");
-//        request.setPassword("secret");
-//        request.setName("Test");
-//
-//        mockMvc.perform(
-//                post("/api/users")
-//                        .accept(MediaType.APPLICATION_JSON)
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(request))
-//        ).andExpectAll(
-//                status().isBadRequest()
-//        ).andDo(result -> {
-//            WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>(){
-//
-//            });
-//            assertNotNull(response.getErrors());
-//        });
-//
-//
-//    }
+                mockMvc.perform(
+                                get("/api/users/current")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .header("X-API-TOKEN", "test"))
+                                .andExpectAll(
+                                                status().isOk())
+                                .andDo(result -> {
+                                        WebResponse<com.ecommerce.user.model.UserResponse> response = objectMapper
+                                                        .readValue(result.getResponse().getContentAsString(),
+                                                                        new TypeReference<>() {
+                                                                        });
+                                        assertNull(response.getErrors());
+                                        assertEquals("test", response.getData().getUsername());
+                                        assertEquals("Test", response.getData().getName());
+                                });
+        }
 
+        @Test
+        void updateUserSuccess() throws Exception {
+                User user = new User();
+                user.setUsername("test");
+                user.setPassword(BCrypt.hash("test"));
+                user.setName("Test");
+                user.setToken("test");
+                user.setTokenExpiredAt(System.currentTimeMillis() + 10000000000L);
+                userRepository.save(user);
 
+                UpdateUserRequest request = new UpdateUserRequest();
+                request.setName("Test Updated");
+                request.setPassword("test1234");
 
+                mockMvc.perform(
+                                patch("/api/users/current")
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request))
+                                                .header("X-API-TOKEN", "test"))
+                                .andExpectAll(
+                                                status().isOk())
+                                .andDo(result -> {
+                                        WebResponse<com.ecommerce.user.model.UserResponse> response = objectMapper
+                                                        .readValue(result.getResponse().getContentAsString(),
+                                                                        new TypeReference<>() {
+                                                                        });
+                                        assertNull(response.getErrors());
+                                        assertEquals("Test Updated", response.getData().getName());
+                                        assertEquals("test", response.getData().getUsername());
 
+                                        User userDb = userRepository.findById("test").orElse(null);
+                                        assertNotNull(userDb);
+                                        assertTrue(BCrypt.verify("test1234", userDb.getPassword()));
+                                });
+        }
 }

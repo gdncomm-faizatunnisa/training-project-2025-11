@@ -31,7 +31,7 @@ public class AuthService {
         User user = userRepository.findById(request.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password wrong"));
 
-        if(BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+        if (BCrypt.checkpw(request.getPassword(), user.getPassword())) {
 
             user.setToken(UUID.randomUUID().toString());
             user.setTokenExpiredAt(next30Days());
@@ -40,13 +40,22 @@ public class AuthService {
             return TokenResponse.builder()
                     .token(user.getToken())
                     .expiredAt(String.valueOf(user.getTokenExpiredAt()))
-                   // .expiredAt(user.getTokenExpiredAt())
+                    // .expiredAt(user.getTokenExpiredAt())
                     .build();
-        }else{
+        } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong Password");
         }
     }
-    private Long next30Days(){
+
+    private Long next30Days() {
         return System.currentTimeMillis() + (1000 * 16 * 24 * 30);
+    }
+
+    @Transactional
+    public void logout(User user) {
+        user.setToken(null);
+        user.setTokenExpiredAt(null);
+
+        userRepository.save(user);
     }
 }
